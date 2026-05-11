@@ -19,6 +19,11 @@
             --glare-text: #c5c6c7;
             --dim-overlay-opacity: 0;
             --font-size-base: 1.1rem;
+
+            /* Comfort Node Spectrum Profiles */
+            --node-hue: -15deg;
+            --node-saturate: 1.5;
+            --node-sepia: 1;
         }
 
         * {
@@ -168,7 +173,7 @@
             gap: 0.5rem;
         }
 
-        /* Grid for Slider and Font Size Control side-by-side */
+        /* Grid for Sliders and Controls */
         .sliders-grid {
             display: grid;
             grid-template-columns: 2fr 1fr;
@@ -256,7 +261,56 @@
             color: #ffaa00;
         }
 
-        /* Maximize Contrast Toggle Container */
+        /* Custom Comfort Nodes Segment Control */
+        .comfort-nodes-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .nodes-label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            color: #ffffff;
+        }
+
+        .nodes-flex {
+            display: flex;
+            gap: 0.5rem;
+            width: 100%;
+        }
+
+        .comfort-node {
+            flex: 1;
+            background-color: var(--surface-color);
+            color: var(--text-color);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.6rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .comfort-node:hover {
+            border-color: #ffaa00;
+        }
+
+        .comfort-node.active-node {
+            background-color: #ffaa00;
+            color: #0b0c10;
+            border-color: #ffaa00;
+            box-shadow: 0 0 10px rgba(255, 170, 0, 0.4);
+        }
+
+        /* Accessibility/Contrast Toggle Line Layout */
         .toggle-container {
             display: flex;
             align-items: center;
@@ -320,20 +374,22 @@
 
         /* 4. Functional Layer Matrix / Shifts & Contrast Modes */
         .hardware-matrix-fallback {
-            filter: sepia(var(--amber-matrix-mix)) hue-rotate(calc(var(--amber-matrix-mix) * -15deg)) saturate(calc(1 + var(--amber-matrix-mix) * 0.5));
+            filter: sepia(calc(var(--amber-matrix-mix) * var(--node-sepia))) 
+                    hue-rotate(calc(var(--amber-matrix-mix) * var(--node-hue))) 
+                    saturate(calc(1 + var(--amber-matrix-mix) * var(--node-saturate)));
         }
 
-        /* Maximize Contrast Override rules */
+        /* Maximize Contrast Override rules - High sharpness with minimal color tints */
         body.high-contrast-mode {
-            filter: none !important; /* Turn off hardware tint matrices for pure legibility */
+            filter: none !important; 
         }
         body.high-contrast-mode #flicker-shield {
-            opacity: 0 !important; /* Eliminate dimming overlay */
+            opacity: 0 !important; 
         }
         body.high-contrast-mode textarea {
             background-color: #000000 !important;
-            color: #ffffff !important;
-            border: 3px solid #ffffff !important;
+            color: var(--glare-text) !important;
+            border: 3px solid var(--glare-text) !important;
             font-weight: 700 !important;
         }
 
@@ -410,7 +466,7 @@
                     </div>
                 </div>
 
-                <!-- Font-Size Adjustment Controller Row (Placed Right Next to it) -->
+                <!-- Font-Size Adjustment Controller Row -->
                 <div class="control-row">
                     <label for="font-slider" class="slider-label">🔍 FONT SIZE <span id="font-readout">100%</span></label>
                     <div class="slider-track-wrapper">
@@ -419,7 +475,18 @@
                 </div>
             </div>
 
-            <!-- Maximize Contrast Toggle Control (For Low-Vision Students) -->
+            <!-- Comfort Nodes Customization Bar -->
+            <div class="comfort-nodes-container">
+                <span class="nodes-label">🎨 CHOOSE COMFORT OPTICAL NODE</span>
+                <div class="nodes-flex">
+                    <button class="comfort-node active-node" data-node="amber">Amber</button>
+                    <button class="comfort-node" data-node="crimson">Crimson</button>
+                    <button class="comfort-node" data-node="emerald">Emerald</button>
+                    <button class="comfort-node" data-node="monochrome">Charcoal</button>
+                </div>
+            </div>
+
+            <!-- Maximize Contrast Toggle Control -->
             <div class="toggle-container">
                 <span class="toggle-label-text">👁️ Maximize Contrast (Low Vision Mode)</span>
                 <label class="switch">
@@ -451,44 +518,81 @@
         const fontReadout = document.getElementById('font-readout');
         const contrastToggle = document.getElementById('contrast-toggle');
         const dayModeBtn = document.getElementById('day-mode-trigger');
+        const comfortNodes = document.querySelectorAll('.comfort-node');
         const root = document.documentElement;
         const body = document.body;
+
+        let activeProfile = 'amber';
+
+        const spectrumProfiles = {
+            amber: { hue: '-15deg', saturate: '1.5', sepia: '1' },
+            crimson: { hue: '-50deg', saturate: '2.5', sepia: '1.2' },
+            emerald: { hue: '65deg', saturate: '0.8', sepia: '0.9' },
+            monochrome: { hue: '0deg', saturate: '0', sepia: '0' }
+        };
 
         function updateHardwareShifts() {
             const val = parseInt(slider.value);
             const decimal = val / 100;
 
-            // Update UI Metrics Readout
+            const capitalizedNode = activeProfile.charAt(0).toUpperCase() + activeProfile.slice(1);
             if (val === 0) {
                 metrics.textContent = `Current Output: ☀️ 0% Standard Dark Mode`;
             } else if (val === 100) {
-                metrics.textContent = `Current Output: 🌌 100% Maximum Darkness Filter applied`;
+                metrics.textContent = `Current Output: 🌌 100% Maximum ${capitalizedNode} Filter applied`;
             } else {
-                metrics.textContent = `Current Output: 🌙 ${val}% Amber Wavelength Filter applied`;
+                metrics.textContent = `Current Output: 🌙 ${val}% ${capitalizedNode} Wavelength Filter applied`;
             }
 
-            // Skip color math updates if High Contrast Mode overrides style variables
-            if (!contrastToggle.checked) {
-                // A. Blue Sub-Pixel Suppression (Wavelength Shift via CSS Matrix Filter)
+            // High Contrast Mode: Apply filters minimalistically to ensure text edges remain perfectly sharp
+            if (contrastToggle.checked) {
+                root.style.setProperty('--bg-color', '#000000');
+                
+                // Set structural text colors based on nodes without using text blur or dim overlays
+                if (activeProfile === 'crimson') {
+                    root.style.setProperty('--glare-text', '#ff4d4d'); // Pure high-contrast red
+                } else if (activeProfile === 'emerald') {
+                    root.style.setProperty('--glare-text', '#2ecc71'); // Pure high-contrast green
+                } else if (activeProfile === 'monochrome') {
+                    root.style.setProperty('--glare-text', '#ffffff'); // Pure white
+                } else {
+                    root.style.setProperty('--glare-text', '#ffaa00'); // Pure high-contrast amber
+                }
+            } else {
+                // Standard Mode: Execute full hardware matrix layers
                 root.style.setProperty('--amber-matrix-mix', decimal);
 
-                // B. Glare Flattening (Luminance Compression Calculations)
-                const bgR = Math.round(11 + (26 - 11) * decimal);
-                const bgG = Math.round(12 + (13 - 12) * decimal);
-                const bgB = Math.round(16 + (10 - 16) * decimal);
+                let targetBgR = 11, targetBgG = 12, targetBgB = 16;
+                let targetTextR = 197, targetTextG = 198, targetTextB = 199;
+
+                if (activeProfile === 'crimson') {
+                    targetBgR = 28; targetBgG = 6; targetBgB = 6;
+                    targetTextR = 231; targetTextG = 76; targetTextB = 60;
+                } else if (activeProfile === 'emerald') {
+                    targetBgR = 8; targetBgG = 24; targetBgB = 16;
+                    targetTextR = 46; targetTextG = 204; targetTextB = 113;
+                } else if (activeProfile === 'monochrome') {
+                    targetBgR = 20; targetBgG = 20; targetBgB = 20;
+                    targetTextR = 160; targetTextG = 160; targetTextB = 160;
+                } else { 
+                    targetBgR = 26; targetBgG = 13; targetBgB = 10;
+                    targetTextR = 211; targetTextG = 84; targetTextB = 0;
+                }
+
+                const bgR = Math.round(11 + (targetBgR - 11) * decimal);
+                const bgG = Math.round(12 + (targetBgG - 12) * decimal);
+                const bgB = Math.round(16 + (targetBgB - 16) * decimal);
                 root.style.setProperty('--bg-color', `rgb(${bgR}, ${bgG}, ${bgB})`);
 
-                const textR = Math.round(197 + (211 - 197) * decimal);
-                const textG = Math.round(198 + (84 - 198) * decimal);
-                const textB = Math.round(199 + (0 - 199) * decimal);
+                const textR = Math.round(197 + (targetTextR - 197) * decimal);
+                const textG = Math.round(198 + (targetTextG - 198) * decimal);
+                const textB = Math.round(199 + (targetTextB - 199) * decimal);
                 root.style.setProperty('--glare-text', `rgb(${textR}, ${textG}, ${textB})`);
 
-                // C. Local Surface Dimming (Flicker Shield Layer Opacity Control)
                 const shieldOpacity = decimal * 0.45;
                 root.style.setProperty('--dim-overlay-opacity', shieldOpacity);
             }
 
-            // D. Monochromatic Color Lock Enforcements
             if (val > 10) {
                 body.classList.add('mono-lock');
             } else {
@@ -496,38 +600,54 @@
             }
         }
 
-        // Slider Event Listener
         slider.addEventListener('input', updateHardwareShifts);
 
-        // Font Size Adjustment Event Listener
         fontSlider.addEventListener('input', (e) => {
             const sizeVal = e.target.value;
             fontReadout.textContent = `${sizeVal}%`;
             root.style.setProperty('--font-size-base', `${(sizeVal / 100) * 1.1}rem`);
         });
 
-        // Maximize Contrast Toggle Event Listener
+        comfortNodes.forEach(node => {
+            node.addEventListener('click', (e) => {
+                comfortNodes.forEach(btn => btn.classList.remove('active-node'));
+                e.target.classList.add('active-node');
+                
+                activeProfile = e.target.getAttribute('data-node');
+                const profile = spectrumProfiles[activeProfile];
+
+                root.style.setProperty('--node-hue', profile.hue);
+                root.style.setProperty('--node-saturate', profile.saturate);
+                root.style.setProperty('--node-sepia', profile.sepia);
+
+                updateHardwareShifts();
+            });
+        });
+
         contrastToggle.addEventListener('change', (e) => {
             if (e.target.checked) {
                 body.classList.add('high-contrast-mode');
-                // Clean up root variables instantly for true high-contrast accessibility
-                root.style.setProperty('--bg-color', '#000000');
-                root.style.setProperty('--glare-text', '#ffffff');
             } else {
                 body.classList.remove('high-contrast-mode');
-                updateHardwareShifts(); // Restore hardware filters instantly
             }
+            updateHardwareShifts();
         });
 
-        // Quick-Tap Day Mode Reset Button
         dayModeBtn.addEventListener('click', () => {
             slider.value = 0;
             contrastToggle.checked = false;
             body.classList.remove('high-contrast-mode');
+            
+            activeProfile = 'amber';
+            comfortNodes.forEach(btn => btn.classList.remove('active-node'));
+            document.querySelector('[data-node="amber"]').classList.add('active-node');
+            root.style.setProperty('--node-hue', spectrumProfiles.amber.hue);
+            root.style.setProperty('--node-saturate', spectrumProfiles.amber.saturate);
+            root.style.setProperty('--node-sepia', spectrumProfiles.amber.sepia);
+            
             updateHardwareShifts();
         });
 
-        // Retain pasted content across accidental page refreshes via Session Runtime Memory
         textWorkspace.value = sessionStorage.getItem('student_notes_sandbox') || '';
         textWorkspace.addEventListener('input', (e) => {
             sessionStorage.setItem('student_notes_sandbox', e.target.value);
