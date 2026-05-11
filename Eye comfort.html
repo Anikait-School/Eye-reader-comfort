@@ -109,7 +109,7 @@
         }
 
         /* Interface Buttons */
-        .day-mode-btn, .fullscreen-btn {
+        .day-mode-btn, .fullscreen-btn, .auto-detect-btn {
             background-color: #ffffff;
             color: #0b0c10;
             border: none;
@@ -119,13 +119,22 @@
             font-weight: 700;
             cursor: pointer;
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            transition: transform 0.1s ease, background-color 0.2s ease;
+            transition: transform 0.1s ease, background-color 0.2s ease, border-color 0.2s ease;
         }
 
         .fullscreen-btn {
             background-color: var(--surface-color);
             color: #ffffff;
             border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .auto-detect-btn {
+            background-color: rgba(69, 243, 255, 0.1);
+            color: var(--accent-color);
+            border: 1px solid rgba(69, 243, 255, 0.3);
+            font-size: 0.75rem;
+            padding: 0.25rem 0.6rem;
+            font-weight: 600;
         }
 
         .day-mode-btn:hover {
@@ -137,7 +146,12 @@
             border-color: var(--accent-color);
         }
 
-        .day-mode-btn:active, .fullscreen-btn:active {
+        .auto-detect-btn:hover {
+            background-color: rgba(69, 243, 255, 0.25);
+            border-color: var(--accent-color);
+        }
+
+        .day-mode-btn:active, .fullscreen-btn:active, .auto-detect-btn:active {
             transform: scale(0.95);
         }
 
@@ -197,13 +211,18 @@
             }
         }
 
+        .slider-header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
         .slider-label {
             font-size: 0.85rem;
             font-weight: 700;
             letter-spacing: 0.1em;
             color: #ffffff;
-            display: flex;
-            justify-content: space-between;
         }
 
         .slider-track-wrapper {
@@ -469,7 +488,10 @@
             <div class="sliders-grid">
                 <!-- Darkness Filter Controller Row -->
                 <div class="control-row">
-                    <label for="darkness-slider" class="slider-label">🎚️ MATCH ROOM DARKNESS</label>
+                    <div class="slider-header-flex">
+                        <label for="darkness-slider" class="slider-label">🎚️ MATCH ROOM DARKNESS</label>
+                        <button class="auto-detect-btn" id="auto-detect-trigger">🌓 Auto-Detect Room</button>
+                    </div>
                     <div class="slider-track-wrapper">
                         <input type="range" id="darkness-slider" min="0" max="100" value="0" step="1">
                     </div>
@@ -531,6 +553,7 @@
         const contrastToggle = document.getElementById('contrast-toggle');
         const dayModeBtn = document.getElementById('day-mode-trigger');
         const fullscreenBtn = document.getElementById('fullscreen-trigger');
+        const autoDetectBtn = document.getElementById('auto-detect-trigger');
         const comfortNodes = document.querySelectorAll('.comfort-node');
         const root = document.documentElement;
         const body = document.body;
@@ -642,7 +665,6 @@
             updateHardwareShifts();
         });
 
-        // Safe Native Fullscreen Native Mode Handler Engine
         fullscreenBtn.addEventListener('click', () => {
             if (!document.fullscreenElement) {
                 document.documentElement.requestFullscreen().catch((err) => {
@@ -651,6 +673,48 @@
             } else {
                 document.exitFullscreen();
             }
+        });
+
+        // 🌗 Autonomous Room Detection Engine Logic
+        autoDetectBtn.addEventListener('click', () => {
+            // Priority 1: Use native browser hardware sensor API if configured and running
+            if ('AmbientLightSensor' in window) {
+                try {
+                    const sensor = new AmbientLightSensor();
+                    sensor.addEventListener('reading', () => {
+                        // Map Lux environmental illumination values linearly to dark modes
+                        let calculatedDarkness = 0;
+                        if (sensor.lux < 5) calculatedDarkness = 95;      // Pitch black cramming room
+                        else if (sensor.lux < 20) calculatedDarkness = 75; // Low light lamp
+                        else if (sensor.lux < 50) calculatedDarkness = 45; // Soft room illumination
+                        else calculatedDarkness = 0;                       // Daytime bright conditions
+                        
+                        slider.value = calculatedDarkness;
+                        updateHardwareShifts();
+                    });
+                    sensor.start();
+                    return;
+                } catch (err) {
+                    console.warn("Hardware lux sensor blocked or restricted. Pivoting to temporal engine.");
+                }
+            }
+
+            // Priority 2: Mathematical Time Fallback Engine (Runs locally on current system clock)
+            const localHours = new Date().getHours();
+            let temporalDarkness = 0;
+
+            if (localHours >= 22 || localHours < 4) {
+                temporalDarkness = 90; // Late night (10 PM to 4 AM) -> Intense suppression
+            } else if (localHours >= 18 && localHours < 22) {
+                temporalDarkness = 60; // Evening twilight hours -> Moderate suppression
+            } else if (localHours >= 4 && localHours < 7) {
+                temporalDarkness = 40; // Early morning dawn -> Soft transition suppression
+            } else {
+                temporalDarkness = 0;  // Standard bright daylight hours -> Clear configuration
+            }
+
+            slider.value = temporalDarkness;
+            updateHardwareShifts();
         });
 
         dayModeBtn.addEventListener('click', () => {
