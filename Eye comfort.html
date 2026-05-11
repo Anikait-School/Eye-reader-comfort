@@ -67,6 +67,7 @@
             display: flex;
             flex-direction: column;
             gap: 2rem;
+            flex-grow: 1;
         }
 
         /* 1. Header Section */
@@ -433,30 +434,6 @@
             color: inherit !important;
             border-color: inherit !important;
         }
-
-        /* 5. Footer & Infrastructure Section */
-        footer {
-            margin-top: auto;
-            padding-top: 3rem;
-            width: 100%;
-            max-width: 800px;
-            text-align: center;
-            font-size: 0.8rem;
-            color: #4f5d73;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .privacy-link {
-            color: #4f5d73;
-            text-decoration: underline;
-            cursor: help;
-        }
-
-        .blueprint-details {
-            line-height: 1.5;
-        }
     </style>
 </head>
 <body class="hardware-matrix-fallback">
@@ -530,16 +507,6 @@
             </div>
 
         </section>
-
-        <!-- 5. Footer & Permanent Infrastructure Mapping -->
-        <footer>
-            <p class="privacy-link" title="This application runs exclusively in your local tab. No analytics, tracking scripts, or network connections exist inside this architecture.">🔒 100% Local Sandbox. Your notes are stored exclusively in your browser's temporary runtime memory. Absolutely zero human oversight, data storage, or network routing.</p>
-            <p class="blueprint-details">
-                <strong>Hosting Layer:</strong> GitHub Pages (Permanently ₹0 / Free) | 
-                <strong>Processing Engine:</strong> Local Device GPU/CPU Hardware (Permanently ₹0 / Free) | 
-                <strong>Maintenance Workload:</strong> 0 Hours Post-Launch.
-            </p>
-        </footer>
 
     </div>
 
@@ -675,19 +642,16 @@
             }
         });
 
-        // 🌗 Autonomous Room Detection Engine Logic
         autoDetectBtn.addEventListener('click', () => {
-            // Priority 1: Use native browser hardware sensor API if configured and running
             if ('AmbientLightSensor' in window) {
                 try {
                     const sensor = new AmbientLightSensor();
                     sensor.addEventListener('reading', () => {
-                        // Map Lux environmental illumination values linearly to dark modes
                         let calculatedDarkness = 0;
-                        if (sensor.lux < 5) calculatedDarkness = 95;      // Pitch black cramming room
-                        else if (sensor.lux < 20) calculatedDarkness = 75; // Low light lamp
-                        else if (sensor.lux < 50) calculatedDarkness = 45; // Soft room illumination
-                        else calculatedDarkness = 0;                       // Daytime bright conditions
+                        if (sensor.lux < 5) calculatedDarkness = 95;      
+                        else if (sensor.lux < 20) calculatedDarkness = 75; 
+                        else if (sensor.lux < 50) calculatedDarkness = 45; 
+                        else calculatedDarkness = 0;                       
                         
                         slider.value = calculatedDarkness;
                         updateHardwareShifts();
@@ -699,18 +663,18 @@
                 }
             }
 
-            // Priority 2: Mathematical Time Fallback Engine (Runs locally on current system clock)
             const localHours = new Date().getHours();
             let temporalDarkness = 0;
 
             if (localHours >= 22 || localHours < 4) {
-                temporalDarkness = 90; // Late night (10 PM to 4 AM) -> Intense suppression
+                temporalDarkness = 95; 
             } else if (localHours >= 18 && localHours < 22) {
-                temporalDarkness = 60; // Evening twilight hours -> Moderate suppression
+                const minutesIntoEvening = ((localHours - 18) * 60) + new Date().getMinutes();
+                temporalDarkness = Math.round(40 + (45 * (minutesIntoEvening / 240)));
             } else if (localHours >= 4 && localHours < 7) {
-                temporalDarkness = 40; // Early morning dawn -> Soft transition suppression
+                temporalDarkness = 50; 
             } else {
-                temporalDarkness = 0;  // Standard bright daylight hours -> Clear configuration
+                temporalDarkness = 0;  
             }
 
             slider.value = temporalDarkness;
