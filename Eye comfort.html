@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Screen-Filter Toolkit</title>
+    <style>
+        /* Base Root Variables & Reset */
+        :root {
+            --bg-color: #0b0c10;
+            --surface-color: #1f2833;
+            --text-color: #c5c6c7;
+            --accent-color: #66fcf1;
+            --system-green: #2ecc71;
+            
+            /* Filter Variables dynamically modified by JS */
+            --amber-matrix-mix: 0;
+            --glare-bg: #0b0c10;
+            --glare-text: #c5c6c7;
+            --dim-overlay-opacity: 0;
+            --font-size-base: 1.1rem;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.7;
+            padding: 2rem 1rem;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            transition: background-color 0.3s ease;
+        }
+
+        /* Flicker Shield Dimming Layer */
+        #flicker-shield {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #000000;
+            opacity: var(--dim-overlay-opacity);
+            pointer-events: none;
+            z-index: 9999;
+            transition: opacity 0.15s ease;
+        }
+
+        /* Main Container */
+        .wrapper {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        /* 1. Header Section */
+        header {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .brand-header {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: -0.05em;
+        }
+
+        .value-prop {
+            font-size: 0.95rem;
+            color: #8f94fb;
+            font-weight: 400;
+        }
+
+        .status-container {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 0.5rem;
+        }
+
+        .status-badge {
+            background-color: rgba(46, 204, 113, 0.15);
+            color: var(--system-green);
+            padding: 0.4rem 0.8rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            border: 1px solid rgba(46, 204, 113, 0.3);
+        }
+
+        /* Reset to Day Mode Button */
+        .day-mode-btn {
+            background-color: #ffffff;
+            color: #0b0c10;
+            border: none;
+            padding: 0.4rem 0.8rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: transform 0.1s ease, background-color 0.2s ease;
+        }
+
+        .day-mode-btn:hover {
+            background-color: #e5e5e5;
+        }
+
+        .day-mode-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* 2. Text Intake Workspace */
+        .workspace {
+            width: 100%;
+        }
+
+        textarea {
+            width: 100%;
+            height: 350px;
+            background-color: var(--surface-color);
+            color: var(--glare-text);
+            border: 1px solid #45f3ff33;
+            border-radius: 12px;
+            padding: 1.5rem;
+            font-family: inherit;
+            font-size: var(--font-size-base);
+            line-height: 1.7;
+            resize: vertical;
+            outline: none;
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+        }
+
+        textarea:focus {
+            border-color: var(--accent-color);
+        }
+
+        /* 3. Sensory Hardware Controllers Container */
+        .controller-card {
+            background-color: rgba(31, 40, 51, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 1.5rem;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .control-row {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        /* Grid for Slider and Font Size Control side-by-side */
+        .sliders-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 600px) {
+            .sliders-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .slider-label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            color: #ffffff;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .slider-track-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 12px;
+            border-radius: 6px;
+            background: #111;
+            outline: none;
+            cursor: pointer;
+        }
+
+        /* Thumb Styling - Darkness */
+        #darkness-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #ffaa00;
+            box-shadow: 0 0 15px #ffaa00;
+            cursor: pointer;
+        }
+
+        #darkness-slider::-moz-range-thumb {
+            width: 28px;
+            height: 28px;
+            border: none;
+            border-radius: 50%;
+            background: #ffaa00;
+            box-shadow: 0 0 15px #ffaa00;
+            cursor: pointer;
+        }
+
+        /* Thumb Styling - Font Size */
+        #font-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            box-shadow: 0 0 10px var(--accent-color);
+            cursor: pointer;
+        }
+
+        #font-slider::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border: none;
+            border-radius: 50%;
+            background: var(--accent-color);
+            box-shadow: 0 0 10px var(--accent-color);
+            cursor: pointer;
+        }
+
+        .metrics-display {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #ffaa00;
+        }
+
+        /* Maximize Contrast Toggle Container */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .toggle-label-text {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #333;
+            transition: .3s;
+            border-radius: 34px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: var(--system-green);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+        }
+
+        /* 4. Functional Layer Matrix / Shifts & Contrast Modes */
+        .hardware-matrix-fallback {
+            filter: sepia(var(--amber-matrix-mix)) hue-rotate(calc(var(--amber-matrix-mix) * -15deg)) saturate(calc(1 + var(--amber-matrix-mix) * 0.5));
+        }
+
+        /* Maximize Contrast Override rules */
+        body.high-contrast-mode {
+            filter: none !important; /* Turn off hardware tint matrices for pure legibility */
+        }
+        body.high-contrast-mode #flicker-shield {
+            opacity: 0 !important; /* Eliminate dimming overlay */
+        }
+        body.high-contrast-mode textarea {
+            background-color: #000000 !important;
+            color: #ffffff !important;
+            border: 3px solid #ffffff !important;
+            font-weight: 700 !important;
+        }
+
+        /* Monochromatic Color Lock Enforcements */
+        .mono-lock * {
+            color: var(--glare-text) !important;
+            border-color: rgba(255, 170, 0, 0.2) !important;
+            text-decoration-color: var(--glare-text) !important;
+        }
+        body.high-contrast-mode.mono-lock * {
+            color: inherit !important;
+            border-color: inherit !important;
+        }
+
+        /* 5. Footer & Infrastructure Section */
+        footer {
+            margin-top: auto;
+            padding-top: 3rem;
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #4f5d73;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .privacy-link {
+            color: #4f5d73;
+            text-decoration: underline;
+            cursor: help;
+        }
+
+        .blueprint-details {
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body class="hardware-matrix-fallback">
+
+    <!-- Flicker Shield Overlay -->
+    <div id="flicker-shield"></div>
+
+    <div class="wrapper">
+        
+        <!-- 1. Header & System Metrics Section -->
+        <header>
+            <h1 class="brand-header">🎒 Student Screen-Filter Toolkit</h1>
+            <p class="value-prop">On-device hardware sub-pixel modulation. Zero accounts, zero tracking, and 100% serverless eye protection for late-night cramming.</p>
+            <div class="status-container">
+                <div class="status-badge" id="status-pill">🟢 Status: Hardware Engine Active</div>
+                <button class="day-mode-btn" id="day-mode-trigger">☀️ Reset to Day Mode</button>
+            </div>
+        </header>
+
+        <!-- 2. Text Intake & Reading Workspace -->
+        <main class="workspace">
+            <textarea id="reading-box" placeholder="Paste your dense textbook chapters, assignment sheets, or lecture notes here to read safely at night..."></textarea>
+        </main>
+
+        <!-- 3. Sensory Hardware Controllers -->
+        <section class="controller-card">
+            
+            <div class="sliders-grid">
+                <!-- Darkness Filter Controller Row -->
+                <div class="control-row">
+                    <label for="darkness-slider" class="slider-label">🎚️ MATCH ROOM DARKNESS</label>
+                    <div class="slider-track-wrapper">
+                        <input type="range" id="darkness-slider" min="0" max="100" value="0" step="1">
+                    </div>
+                    <div class="metrics-display" id="metrics-readout">
+                        Current Output: ☀️ 0% Standard Dark Mode
+                    </div>
+                </div>
+
+                <!-- Font-Size Adjustment Controller Row (Placed Right Next to it) -->
+                <div class="control-row">
+                    <label for="font-slider" class="slider-label">🔍 FONT SIZE <span id="font-readout">100%</span></label>
+                    <div class="slider-track-wrapper">
+                        <input type="range" id="font-slider" min="70" max="200" value="100" step="5">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Maximize Contrast Toggle Control (For Low-Vision Students) -->
+            <div class="toggle-container">
+                <span class="toggle-label-text">👁️ Maximize Contrast (Low Vision Mode)</span>
+                <label class="switch">
+                    <input type="checkbox" id="contrast-toggle">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+        </section>
+
+        <!-- 5. Footer & Permanent Infrastructure Mapping -->
+        <footer>
+            <p class="privacy-link" title="This application runs exclusively in your local tab. No analytics, tracking scripts, or network connections exist inside this architecture.">🔒 100% Local Sandbox. Your notes are stored exclusively in your browser's temporary runtime memory. Absolutely zero human oversight, data storage, or network routing.</p>
+            <p class="blueprint-details">
+                <strong>Hosting Layer:</strong> GitHub Pages (Permanently ₹0 / Free) | 
+                <strong>Processing Engine:</strong> Local Device GPU/CPU Hardware (Permanently ₹0 / Free) | 
+                <strong>Maintenance Workload:</strong> 0 Hours Post-Launch.
+            </p>
+        </footer>
+
+    </div>
+
+    <!-- 4. Dynamic Hardware Shift Script Engine -->
+    <script>
+        const slider = document.getElementById('darkness-slider');
+        const metrics = document.getElementById('metrics-readout');
+        const textWorkspace = document.getElementById('reading-box');
+        const fontSlider = document.getElementById('font-slider');
+        const fontReadout = document.getElementById('font-readout');
+        const contrastToggle = document.getElementById('contrast-toggle');
+        const dayModeBtn = document.getElementById('day-mode-trigger');
+        const root = document.documentElement;
+        const body = document.body;
+
+        function updateHardwareShifts() {
+            const val = parseInt(slider.value);
+            const decimal = val / 100;
+
+            // Update UI Metrics Readout
+            if (val === 0) {
+                metrics.textContent = `Current Output: ☀️ 0% Standard Dark Mode`;
+            } else if (val === 100) {
+                metrics.textContent = `Current Output: 🌌 100% Maximum Darkness Filter applied`;
+            } else {
+                metrics.textContent = `Current Output: 🌙 ${val}% Amber Wavelength Filter applied`;
+            }
+
+            // Skip color math updates if High Contrast Mode overrides style variables
+            if (!contrastToggle.checked) {
+                // A. Blue Sub-Pixel Suppression (Wavelength Shift via CSS Matrix Filter)
+                root.style.setProperty('--amber-matrix-mix', decimal);
+
+                // B. Glare Flattening (Luminance Compression Calculations)
+                const bgR = Math.round(11 + (26 - 11) * decimal);
+                const bgG = Math.round(12 + (13 - 12) * decimal);
+                const bgB = Math.round(16 + (10 - 16) * decimal);
+                root.style.setProperty('--bg-color', `rgb(${bgR}, ${bgG}, ${bgB})`);
+
+                const textR = Math.round(197 + (211 - 197) * decimal);
+                const textG = Math.round(198 + (84 - 198) * decimal);
+                const textB = Math.round(199 + (0 - 199) * decimal);
+                root.style.setProperty('--glare-text', `rgb(${textR}, ${textG}, ${textB})`);
+
+                // C. Local Surface Dimming (Flicker Shield Layer Opacity Control)
+                const shieldOpacity = decimal * 0.45;
+                root.style.setProperty('--dim-overlay-opacity', shieldOpacity);
+            }
+
+            // D. Monochromatic Color Lock Enforcements
+            if (val > 10) {
+                body.classList.add('mono-lock');
+            } else {
+                body.classList.remove('mono-lock');
+            }
+        }
+
+        // Slider Event Listener
+        slider.addEventListener('input', updateHardwareShifts);
+
+        // Font Size Adjustment Event Listener
+        fontSlider.addEventListener('input', (e) => {
+            const sizeVal = e.target.value;
+            fontReadout.textContent = `${sizeVal}%`;
+            root.style.setProperty('--font-size-base', `${(sizeVal / 100) * 1.1}rem`);
+        });
+
+        // Maximize Contrast Toggle Event Listener
+        contrastToggle.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                body.classList.add('high-contrast-mode');
+                // Clean up root variables instantly for true high-contrast accessibility
+                root.style.setProperty('--bg-color', '#000000');
+                root.style.setProperty('--glare-text', '#ffffff');
+            } else {
+                body.classList.remove('high-contrast-mode');
+                updateHardwareShifts(); // Restore hardware filters instantly
+            }
+        });
+
+        // Quick-Tap Day Mode Reset Button
+        dayModeBtn.addEventListener('click', () => {
+            slider.value = 0;
+            contrastToggle.checked = false;
+            body.classList.remove('high-contrast-mode');
+            updateHardwareShifts();
+        });
+
+        // Retain pasted content across accidental page refreshes via Session Runtime Memory
+        textWorkspace.value = sessionStorage.getItem('student_notes_sandbox') || '';
+        textWorkspace.addEventListener('input', (e) => {
+            sessionStorage.setItem('student_notes_sandbox', e.target.value);
+        });
+    </script>
+</body>
+</html>
