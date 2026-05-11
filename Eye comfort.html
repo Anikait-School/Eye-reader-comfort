@@ -108,8 +108,8 @@
             border: 1px solid rgba(46, 204, 113, 0.3);
         }
 
-        /* Reset to Day Mode Button */
-        .day-mode-btn {
+        /* Interface Buttons */
+        .day-mode-btn, .fullscreen-btn {
             background-color: #ffffff;
             color: #0b0c10;
             border: none;
@@ -122,11 +122,22 @@
             transition: transform 0.1s ease, background-color 0.2s ease;
         }
 
+        .fullscreen-btn {
+            background-color: var(--surface-color);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
         .day-mode-btn:hover {
             background-color: #e5e5e5;
         }
 
-        .day-mode-btn:active {
+        .fullscreen-btn:hover {
+            background-color: #2c3540;
+            border-color: var(--accent-color);
+        }
+
+        .day-mode-btn:active, .fullscreen-btn:active {
             transform: scale(0.95);
         }
 
@@ -379,7 +390,7 @@
                     saturate(calc(1 + var(--amber-matrix-mix) * var(--node-saturate)));
         }
 
-        /* Maximize Contrast Override rules - High sharpness with minimal color tints */
+        /* Maximize Contrast Override rules */
         body.high-contrast-mode {
             filter: none !important; 
         }
@@ -443,6 +454,7 @@
             <div class="status-container">
                 <div class="status-badge" id="status-pill">🟢 Status: Hardware Engine Active</div>
                 <button class="day-mode-btn" id="day-mode-trigger">☀️ Reset to Day Mode</button>
+                <button class="fullscreen-btn" id="fullscreen-trigger">🖥️ Toggle Fullscreen</button>
             </div>
         </header>
 
@@ -518,6 +530,7 @@
         const fontReadout = document.getElementById('font-readout');
         const contrastToggle = document.getElementById('contrast-toggle');
         const dayModeBtn = document.getElementById('day-mode-trigger');
+        const fullscreenBtn = document.getElementById('fullscreen-trigger');
         const comfortNodes = document.querySelectorAll('.comfort-node');
         const root = document.documentElement;
         const body = document.body;
@@ -544,22 +557,18 @@
                 metrics.textContent = `Current Output: 🌙 ${val}% ${capitalizedNode} Wavelength Filter applied`;
             }
 
-            // High Contrast Mode: Apply filters minimalistically to ensure text edges remain perfectly sharp
             if (contrastToggle.checked) {
                 root.style.setProperty('--bg-color', '#000000');
-                
-                // Set structural text colors based on nodes without using text blur or dim overlays
                 if (activeProfile === 'crimson') {
-                    root.style.setProperty('--glare-text', '#ff4d4d'); // Pure high-contrast red
+                    root.style.setProperty('--glare-text', '#ff4d4d');
                 } else if (activeProfile === 'emerald') {
-                    root.style.setProperty('--glare-text', '#2ecc71'); // Pure high-contrast green
+                    root.style.setProperty('--glare-text', '#2ecc71');
                 } else if (activeProfile === 'monochrome') {
-                    root.style.setProperty('--glare-text', '#ffffff'); // Pure white
+                    root.style.setProperty('--glare-text', '#ffffff');
                 } else {
-                    root.style.setProperty('--glare-text', '#ffaa00'); // Pure high-contrast amber
+                    root.style.setProperty('--glare-text', '#ffaa00');
                 }
             } else {
-                // Standard Mode: Execute full hardware matrix layers
                 root.style.setProperty('--amber-matrix-mix', decimal);
 
                 let targetBgR = 11, targetBgG = 12, targetBgB = 16;
@@ -631,6 +640,17 @@
                 body.classList.remove('high-contrast-mode');
             }
             updateHardwareShifts();
+        });
+
+        // Safe Native Fullscreen Native Mode Handler Engine
+        fullscreenBtn.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch((err) => {
+                    console.warn(`Error trying to enable fullscreen mode: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
         });
 
         dayModeBtn.addEventListener('click', () => {
